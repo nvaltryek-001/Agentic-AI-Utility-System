@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Valtryek Smart Utility</string>
+    <string name="title_activity_main">Valtryek Smart Utility</string>
+    <string name="package_name">com.valtryek.smartutility</string>
+    <string name="custom_url_scheme">com.valtryek.smartutility</string>
+</resources>

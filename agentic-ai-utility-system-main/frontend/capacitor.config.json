@@ -1,0 +1,36 @@
+{
+  "appId": "com.valtryek.smartutility",
+  "appName": "Valtryek Smart Utility",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    },
+    "Geolocation": {
+      "enabled": true
+    },
+    "Camera": {
+      "enabled": true
+    }
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "android/keystore.jks",
+      "keystoreAlias": "valtryek",
+      "keystorePassword": "valtryek2024",
+      "keystoreKeyPassword": "valtryek2024"
+    },
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
