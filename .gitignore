@@ -1,0 +1,12 @@
+node_modules/
+__pycache__/
+*.pyc
+logs/
+*.log
+.env
+.env.*
+!.env.example
+dist/
+build/
+.vscode/
+.qoder/
