@@ -6,7 +6,9 @@
  * - Confidence score
  */
 
-// Fault category keywords for text-based classification
+import { triageReport } from "../services/aiService.js";
+
+// Fault category keywords for text-based classification (fallback only)
 const CATEGORY_KEYWORDS = {
   electricity: ["power", "electric", "wire", "cable", "transformer", "outage", "blackout", "spark", "fuse", "voltage"],
   water: ["water", "leak", "pipe", "flood", "burst", "sewage", "drain", "tap", "main", "hydrant"],
@@ -25,22 +27,56 @@ const SEVERITY_INDICATORS = {
 };
 
 /**
- * Analyze fault based on text description and location
- * @param {Object} data - { description, type, location }
- * @returns {Object} - { category, severity, confidenceScore }
+ * Analyze a fault report.
+ * 1. Ask the trained multi-agent pipeline in the AI service (category, severity, priority, safety rules).
+ * 2. If the service is unreachable or times out, fall back to the keyword rules below so reporting
+ *    never breaks. `source` in the result says which path was used.
+ * @param {Object} data - { description, type, location, locationType, timestamp }
  */
 export const analyzeFault = async (data) => {
-  const { description, type, location } = data;
-  
+  const { description, type, location, locationType, timestamp } = data;
+  const populationDensity = estimatePopulationDensity(location);
+
+  if (description && process.env.AI_SERVICE_DISABLED !== "true") {
+    try {
+      const ai = await triageReport({
+        description,
+        category: type,
+        locationType,
+        populationDensity,
+        timestamp,
+      });
+      return {
+        category: ai.category,
+        severity: ai.severity,
+        confidenceScore: Number(Math.min(ai.category_confidence, ai.severity_confidence).toFixed(2)),
+        populationDensity,
+        aiPriorityScore: ai.priority_score,
+        responseSla: ai.response_sla,
+        requiresHumanReview: ai.requires_human_review,
+        escalations: ai.escalations,
+        flags: ai.flags,
+        source: "ml_agents",
+        analysisTimestamp: new Date().toISOString(),
+      };
+    } catch (err) {
+      console.warn(`⚠️ AI service unavailable (${err.message}); using rule-based analysis`);
+    }
+  }
+  return { ...ruleBasedAnalysis(description, type, populationDensity), source: "rules_fallback" };
+};
+
+/**
+ * Keyword fallback (the original logic, kept for resilience).
+ */
+export const ruleBasedAnalysis = (description, type, populationDensity = 0) => {
   let category = type || "other";
   let severity = "medium";
   let confidenceScore = 0.5;
-  
-  // Text-based analysis
+
   if (description) {
     const descLower = description.toLowerCase();
-    
-    // Determine category from description if not provided
+
     if (!type || type === "other") {
       for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
         if (keywords.some(kw => descLower.includes(kw))) {
@@ -50,8 +86,7 @@ export const analyzeFault = async (data) => {
         }
       }
     }
-    
-    // Determine severity from description
+
     for (const [sev, indicators] of Object.entries(SEVERITY_INDICATORS)) {
       if (indicators.some(ind => descLower.includes(ind))) {
         severity = sev;
@@ -59,30 +94,24 @@ export const analyzeFault = async (data) => {
         break;
       }
     }
-    
-    // Check for urgent keywords
+
     const urgentKeywords = ["urgent", "immediate", "asap", "emergency", "dangerous", "hazard"];
     if (urgentKeywords.some(kw => descLower.includes(kw))) {
       severity = severity === "low" ? "medium" : severity === "medium" ? "high" : "critical";
       confidenceScore += 0.1;
     }
   }
-  
-  // Location-based severity adjustment (mock population density)
-  const populationDensity = estimatePopulationDensity(location);
+
   if (populationDensity > 1000 && severity === "low") {
     severity = "medium";
   } else if (populationDensity > 5000 && severity !== "critical") {
     severity = severity === "medium" ? "high" : "critical";
   }
-  
-  // Cap confidence score
-  confidenceScore = Math.min(confidenceScore, 0.95);
-  
+
   return {
     category,
     severity,
-    confidenceScore: parseFloat(confidenceScore.toFixed(2)),
+    confidenceScore: parseFloat(Math.min(confidenceScore, 0.95).toFixed(2)),
     populationDensity,
     analysisTimestamp: new Date().toISOString()
   };
@@ -128,21 +157,44 @@ const estimatePopulationDensity = (location) => {
 };
 
 /**
- * Check for similar historical faults in the area
+ * Count similar faults reported nearby in the last 30 days and their average resolution time.
+ * The Fault model is imported lazily so this module stays usable without a database (tests, fallback).
  */
-export const checkHistoricalFaults = async (location, category, radius = 1) => {
-  // This would query the database for similar faults
-  // Returns count of similar faults in the radius (km)
-  // Placeholder implementation
-  return {
-    similarCount: Math.floor(Math.random() * 5),
-    recentTrend: "increasing", // increasing, decreasing, stable
-    averageResolutionTime: Math.floor(Math.random() * 48) + 2 // hours
-  };
+export const checkHistoricalFaults = async (location, category, radiusKm = 1) => {
+  const empty = { similarCount: 0, recentTrend: "stable", averageResolutionTime: null };
+  if (!location?.lat || !location?.lng || !category) return empty;
+  try {
+    const { default: Fault } = await import("../models/Fault.js");
+    const dLat = radiusKm / 111;
+    const dLng = radiusKm / (111 * Math.cos((location.lat * Math.PI) / 180));
+    const since = new Date(Date.now() - 30 * 24 * 3600 * 1000);
+    const nearby = await Fault.find({
+      type: category,
+      createdAt: { $gte: since },
+      "location.lat": { $gte: location.lat - dLat, $lte: location.lat + dLat },
+      "location.lng": { $gte: location.lng - dLng, $lte: location.lng + dLng },
+    }).select("createdAt completedAt").lean();
+
+    const resolved = nearby.filter(f => f.completedAt);
+    const avgHours = resolved.length
+      ? resolved.reduce((sum, f) => sum + (new Date(f.completedAt) - new Date(f.createdAt)), 0) / resolved.length / 3.6e6
+      : null;
+    const halfway = Date.now() - 15 * 24 * 3600 * 1000;
+    const recent = nearby.filter(f => new Date(f.createdAt) >= halfway).length;
+    const older = nearby.length - recent;
+    return {
+      similarCount: nearby.length,
+      recentTrend: recent > older ? "increasing" : recent < older ? "decreasing" : "stable",
+      averageResolutionTime: avgHours === null ? null : Math.round(avgHours),
+    };
+  } catch (err) {
+    return empty;
+  }
 };
 
 export default {
   analyzeFault,
+  ruleBasedAnalysis,
   analyzeImage,
   checkHistoricalFaults
 };

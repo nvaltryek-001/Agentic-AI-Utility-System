@@ -1,0 +1,12 @@
+{
+  "rows": 1350,
+  "category_accuracy": 0.9867,
+  "severity_macro_f1": 0.6618,
+  "severity_accuracy": 0.6733,
+  "critical_recall": 0.781,
+  "under_triage_rate": 0.1348,
+  "over_triage_rate": 0.1919,
+  "guardrail_escalation_rate": 0.0452,
+  "human_review_rate": 0.0852,
+  "mean_latency_ms": 19.75
+}

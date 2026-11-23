@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ai-service:
+    name: AI service · train + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agentic-ai-utility-system-main/ai-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: agentic-ai-utility-system-main/ai-service/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Retrain all models from the committed train/val/test splits
+        run: python -m ml.train && python -m ml.evaluate_pipeline
+      - name: Tests (dataset, models, agents, API)
+        run: python -m pytest -v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model-metrics
+          path: |
+            agentic-ai-utility-system-main/ai-service/artifacts/*.json
+            agentic-ai-utility-system-main/ai-service/artifacts/MODEL_CARD.md
+            agentic-ai-utility-system-main/ai-service/artifacts/figures/
+
+  backend:
+    name: Backend · unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agentic-ai-utility-system-main/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: agentic-ai-utility-system-main/backend/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  frontend:
+    name: Frontend · build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agentic-ai-utility-system-main/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: agentic-ai-utility-system-main/frontend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+        env:
+          VITE_API_URL: http://localhost:5000/api

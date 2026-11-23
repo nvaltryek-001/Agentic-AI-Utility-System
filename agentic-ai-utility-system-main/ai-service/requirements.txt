@@ -1,7 +1,10 @@
-fastapi
-uvicorn
-scikit-learn
-numpy
-pillow
-python-multipart
-tensorflow-cpu
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.5
+python-multipart>=0.0.9
+scikit-learn>=1.4
+numpy>=1.26
+pandas>=2.1
+joblib>=1.3
+pillow>=10.0
+matplotlib>=3.8

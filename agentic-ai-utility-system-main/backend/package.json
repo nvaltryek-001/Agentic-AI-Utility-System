@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -36,5 +37,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

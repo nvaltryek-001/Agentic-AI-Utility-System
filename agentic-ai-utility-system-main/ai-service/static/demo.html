@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Valtryek · AI Triage Console</title>
+<style>
+  :root {
+    --bg: #0b1020; --panel: #121a2f; --panel-2: #18223b; --line: #24304d; --text: #e6ebf5; --muted: #8b98b8;
+    --accent: #4f8cff; --accent-2: #7cc4ff;
+    --low: #22c55e; --medium: #eab308; --high: #f97316; --critical: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 "Inter", "Segoe UI", system-ui, sans-serif; background: radial-gradient(1200px 600px at 10% -10%, #1a2a55 0%, var(--bg) 55%); color: var(--text); min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; letter-spacing: .2px; }
+  .bolt { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), #7c3aed); font-size: 18px; }
+  .brand small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); }
+  .stats { display: flex; gap: 10px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; text-align: right; }
+  .stat b { display: block; font-size: 15px; }
+  .stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  main { display: grid; grid-template-columns: 420px 1fr; gap: 24px; padding: 24px 32px 40px; max-width: 1400px; margin: 0 auto; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  h2 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+  textarea, select, input { width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; outline: none; }
+  textarea { min-height: 118px; resize: vertical; }
+  textarea:focus, select:focus, input:focus { border-color: var(--accent); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { border: 1px solid var(--line); background: transparent; color: var(--accent-2); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); }
+  button.go { margin-top: 18px; width: 100%; padding: 12px; border: 0; border-radius: 12px; background: linear-gradient(135deg, var(--accent), #6d5dfc); color: white; font-weight: 600; font-size: 15px; cursor: pointer; }
+  button.go:disabled { opacity: .6; cursor: wait; }
+  .empty { color: var(--muted); text-align: center; padding: 80px 20px; }
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .tile { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .tile span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  .tile b { display: block; font-size: 22px; margin-top: 4px; text-transform: capitalize; }
+  .tile em { font-style: normal; font-size: 12px; color: var(--muted); }
+  .sev-low { color: var(--low); } .sev-medium { color: var(--medium); } .sev-high { color: var(--high); } .sev-critical { color: var(--critical); }
+  .bar { height: 6px; background: var(--line); border-radius: 99px; margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--critical)); border-radius: 99px; transition: width .6s; }
+  .flags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .flag { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #2a1d10; color: #fdba74; border: 1px solid #5b3a16; }
+  .flag.ok { background: #0f2a1c; color: #86efac; border-color: #1f5136; }
+  .trace { position: relative; padding-left: 22px; }
+  .trace:before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+  .step { position: relative; margin-bottom: 14px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; opacity: 0; transform: translateY(6px); animation: in .35s forwards; }
+  .step:before { content: ""; position: absolute; left: -20px; top: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px #4f8cff33; }
+  .step h3 { margin: 0 0 4px; font-size: 14px; display: flex; justify-content: space-between; }
+  .step h3 small { color: var(--muted); font-weight: 400; }
+  .step ul { margin: 4px 0 0; padding-left: 18px; color: #c5cee3; }
+  .probs { display: flex; gap: 4px; margin-top: 8px; }
+  .probs div { flex: 1; font-size: 11px; color: var(--muted); }
+  .probs i { display: block; height: 4px; background: var(--accent); border-radius: 4px; margin-top: 3px; }
+  @keyframes in { to { opacity: 1; transform: none; } }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } .summary { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="bolt">⚡</div><div>Valtryek AI Triage Console<small>Multi-agent fault triage · trained models</small></div></div>
+  <div class="stats" id="stats"></div>
+</header>
+<main>
+  <section class="card">
+    <h2>Citizen report</h2>
+    <label for="desc">Description</label>
+    <textarea id="desc" placeholder="Describe the fault…">Live wire hanging low and sparking near the primary school gate, children walk here.</textarea>
+    <div class="chips" id="samples"></div>
+    <div class="row">
+      <div><label for="cat">Citizen's category</label>
+        <select id="cat"><option value="">— not given —</option><option>electricity</option><option>water</option><option>road</option><option>streetlight</option><option>sewage</option><option>gas</option></select></div>
+      <div><label for="loc">Location type</label>
+        <select id="loc"><option value="">infer from text</option><option>residential</option><option>commercial</option><option>industrial</option><option>hospital</option><option>school</option><option>highway</option></select></div>
+    </div>
+    <div class="row">
+      <div><label for="tod">Time of day</label>
+        <select id="tod"><option value="">use clock</option><option>morning</option><option>afternoon</option><option>evening</option><option>night</option></select></div>
+      <div><label for="den">Population density /km²</label><input id="den" type="number" min="0" placeholder="e.g. 9000" /></div>
+    </div>
+    <button class="go" id="go">Run triage agents</button>
+  </section>
+  <section class="card" id="result"><div class="empty">Submit a report to see each agent's decision.</div></section>
+</main>
+<script>
+const SAMPLES = [
+  ["Gas leak", "Strong smell of gas with a hissing sound near the society gate, people are scared"],
+  ["Pothole", "Huge pothole on the ring road flyover, two bikes fell yesterday"],
+  ["Streetlight", "one street lamp bulb fused in our lane"],
+  ["Wrong category", "manhole cover missing in the middle of the lane, very dangerous"],
+  ["Water", "no water supply since yesterday in our colony"],
+];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+SAMPLES.forEach(([label, text]) => {
+  const b = document.createElement("button"); b.className = "chip"; b.textContent = label;
+  b.onclick = () => { $("desc").value = text; if (label === "Wrong category") $("cat").value = "road"; else $("cat").value = ""; };
+  $("samples").appendChild(b);
+});
+
+fetch("model-info").then((r) => r.json()).then((m) => {
+  const s = [["Category F1", m.category.test.macro_f1], ["Severity F1", m.severity.test.macro_f1],
+             ["Critical recall", m.severity.test.critical_recall], ["Anomaly F1", m.anomaly.test.f1]];
+  $("stats").innerHTML = s.map(([k, v]) => `<div class="stat"><b>${v.toFixed(2)}</b><span>${k} · test</span></div>`).join("");
+}).catch(() => {});
+
+function probs(p) {
+  return `<div class="probs">${Object.entries(p).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+    `<div>${esc(k)} ${(v * 100).toFixed(0)}%<i style="width:${Math.max(2, v * 100)}%"></i></div>`).join("")}</div>`;
+}
+
+$("go").onclick = async () => {
+  const body = { description: $("desc").value };
+  if ($("cat").value) body.category = $("cat").value;
+  if ($("loc").value) body.location_type = $("loc").value;
+  if ($("tod").value) body.time_of_day = $("tod").value;
+  if ($("den").value) body.population_density = Number($("den").value);
+  $("go").disabled = true; $("go").textContent = "Agents working…";
+  try {
+    const r = await fetch("agents/triage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+    render(await r.json());
+  } catch (e) {
+    $("result").innerHTML = `<div class="empty">Error: ${esc(e.message)}</div>`;
+  } finally { $("go").disabled = false; $("go").textContent = "Run triage agents"; }
+};
+
+function render(d) {
+  const flags = [...d.flags.map((f) => `<span class="flag">${esc(f.replaceAll("_", " "))}</span>`),
+                 ...d.escalations.map((e) => `<span class="flag">⚠ ${esc(e)}</span>`)];
+  if (!flags.length) flags.push(`<span class="flag ok">no flags</span>`);
+  const steps = d.trace.map((t, i) => `
+    <div class="step" style="animation-delay:${i * 0.18}s">
+      <h3>${i + 1}. ${esc(t.agent)} <small>${t.ms} ms</small></h3>
+      <ul>${t.reasoning.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+      ${t.output.probabilities ? probs(t.output.probabilities) : ""}
+    </div>`).join("");
+  $("result").innerHTML = `
+    <h2>Decision</h2>
+    <div class="summary">
+      <div class="tile"><span>Category</span><b>${esc(d.category)}</b><em>${(d.category_confidence * 100).toFixed(0)}% confidence</em></div>
+      <div class="tile"><span>Severity</span><b class="sev-${d.severity}">${esc(d.severity)}</b><em>${(d.severity_confidence * 100).toFixed(0)}% model confidence</em></div>
+      <div class="tile"><span>Priority</span><b>${d.priority_score}</b><div class="bar"><i style="width:${d.priority_score}%"></i></div></div>
+      <div class="tile"><span>Response SLA</span><b style="font-size:18px">${esc(d.response_sla)}</b><em>${d.requires_immediate_attention ? "dispatch now" : "queued"}</em></div>
+    </div>
+    <div class="flags">${flags.join("")}</div>
+    <h2>Agent trace · ${d.total_ms} ms total</h2>
+    <div class="trace">${steps}</div>`;
+}
+</script>
+</body>
+</html>

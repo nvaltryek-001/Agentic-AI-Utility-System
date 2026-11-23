@@ -1,0 +1,444 @@
+{
+  "trained_at": "2026-11-22T16:52:53+00:00",
+  "sklearn_version": "1.9.1",
+  "data": {
+    "train": 6300,
+    "val": 1350,
+    "test": 1350,
+    "sensor_train": 12096,
+    "sensor_val": 2304,
+    "sensor_test": 2880
+  },
+  "category": {
+    "selected": "tfidf_word+char + LogReg(C=16)",
+    "validation_macro_f1": {
+      "tfidf_word + ComplementNB": 0.9832,
+      "tfidf_word+char + LogReg(C=4)": 0.9832,
+      "tfidf_word+char + LogReg(C=16)": 0.9832,
+      "tfidf_word+char + LinearSVC(cal.)": 0.9832
+    },
+    "test": {
+      "accuracy": 0.9867,
+      "macro_f1": 0.987,
+      "weighted_f1": 0.9866,
+      "per_class": {
+        "electricity": {
+          "precision": 0.9813,
+          "recall": 0.9813,
+          "f1-score": 0.9813,
+          "support": 321
+        },
+        "water": {
+          "precision": 0.9964,
+          "recall": 0.9964,
+          "f1-score": 0.9964,
+          "support": 277
+        },
+        "road": {
+          "precision": 0.9844,
+          "recall": 1.0,
+          "f1-score": 0.9922,
+          "support": 253
+        },
+        "streetlight": {
+          "precision": 0.9755,
+          "recall": 0.9707,
+          "f1-score": 0.9731,
+          "support": 205
+        },
+        "sewage": {
+          "precision": 0.9946,
+          "recall": 0.9735,
+          "f1-score": 0.984,
+          "support": 189
+        },
+        "gas": {
+          "precision": 0.9906,
+          "recall": 1.0,
+          "f1-score": 0.9953,
+          "support": 105
+        }
+      },
+      "confusion_matrix": [
+        [
+          315,
+          0,
+          0,
+          5,
+          0,
+          1
+        ],
+        [
+          0,
+          276,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          253,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0,
+          199,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          4,
+          0,
+          184,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          105
+        ]
+      ]
+    },
+    "baseline_keyword_rules_test": {
+      "accuracy": 0.5919,
+      "macro_f1": 0.5289,
+      "weighted_f1": 0.5704,
+      "per_class": {
+        "electricity": {
+          "precision": 0.8415,
+          "recall": 0.8598,
+          "f1-score": 0.8505,
+          "support": 321
+        },
+        "water": {
+          "precision": 0.5461,
+          "recall": 0.8989,
+          "f1-score": 0.6794,
+          "support": 277
+        },
+        "road": {
+          "precision": 0.4644,
+          "recall": 0.6443,
+          "f1-score": 0.5397,
+          "support": 253
+        },
+        "streetlight": {
+          "precision": 0.5694,
+          "recall": 0.2,
+          "f1-score": 0.296,
+          "support": 205
+        },
+        "sewage": {
+          "precision": 0.973,
+          "recall": 0.1905,
+          "f1-score": 0.3186,
+          "support": 189
+        },
+        "gas": {
+          "precision": 1.0,
+          "recall": 0.3238,
+          "f1-score": 0.4892,
+          "support": 105
+        }
+      },
+      "confusion_matrix": [
+        [
+          276,
+          2,
+          14,
+          8,
+          0,
+          0
+        ],
+        [
+          0,
+          249,
+          27,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          40,
+          163,
+          7,
+          0,
+          0
+        ],
+        [
+          52,
+          3,
+          108,
+          41,
+          0,
+          0
+        ],
+        [
+          0,
+          118,
+          18,
+          10,
+          36,
+          0
+        ],
+        [
+          0,
+          44,
+          21,
+          6,
+          0,
+          34
+        ]
+      ]
+    }
+  },
+  "severity": {
+    "selected": "text+context + LogReg(C=2)",
+    "validation_macro_f1": {
+      "text+context + LogReg(C=2)": 0.6748,
+      "text+context + LogReg(C=8)": 0.6637,
+      "text+context + LogReg(C=8,balanced)": 0.6517,
+      "text+context + LinearSVC(cal.)": 0.6509
+    },
+    "test": {
+      "accuracy": 0.6948,
+      "macro_f1": 0.6898,
+      "weighted_f1": 0.6951,
+      "per_class": {
+        "low": {
+          "precision": 0.7391,
+          "recall": 0.5215,
+          "f1-score": 0.6115,
+          "support": 163
+        },
+        "medium": {
+          "precision": 0.6352,
+          "recall": 0.7063,
+          "f1-score": 0.6689,
+          "support": 429
+        },
+        "high": {
+          "precision": 0.6525,
+          "recall": 0.6907,
+          "f1-score": 0.6711,
+          "support": 443
+        },
+        "critical": {
+          "precision": 0.8443,
+          "recall": 0.7746,
+          "f1-score": 0.8079,
+          "support": 315
+        }
+      },
+      "confusion_matrix": [
+        [
+          85,
+          77,
+          0,
+          1
+        ],
+        [
+          29,
+          303,
+          94,
+          3
+        ],
+        [
+          0,
+          96,
+          306,
+          41
+        ],
+        [
+          1,
+          1,
+          69,
+          244
+        ]
+      ],
+      "ordinal_mae": 0.3111,
+      "within_one_level": 0.9956,
+      "critical_recall": 0.7746,
+      "under_triage_rate": 0.1452
+    },
+    "test_end_to_end_predicted_category": {
+      "accuracy": 0.6926,
+      "macro_f1": 0.688,
+      "weighted_f1": 0.6929,
+      "per_class": {
+        "low": {
+          "precision": 0.7288,
+          "recall": 0.5276,
+          "f1-score": 0.6121,
+          "support": 163
+        },
+        "medium": {
+          "precision": 0.6342,
+          "recall": 0.6993,
+          "f1-score": 0.6652,
+          "support": 429
+        },
+        "high": {
+          "precision": 0.6517,
+          "recall": 0.6885,
+          "f1-score": 0.6696,
+          "support": 443
+        },
+        "critical": {
+          "precision": 0.8385,
+          "recall": 0.7746,
+          "f1-score": 0.8053,
+          "support": 315
+        }
+      },
+      "confusion_matrix": [
+        [
+          86,
+          76,
+          0,
+          1
+        ],
+        [
+          31,
+          300,
+          94,
+          4
+        ],
+        [
+          0,
+          96,
+          305,
+          42
+        ],
+        [
+          1,
+          1,
+          69,
+          244
+        ]
+      ],
+      "ordinal_mae": 0.3141,
+      "within_one_level": 0.9948,
+      "critical_recall": 0.7746,
+      "under_triage_rate": 0.1467
+    },
+    "baseline_rule_scorer_test": {
+      "accuracy": 0.357,
+      "macro_f1": 0.3396,
+      "weighted_f1": 0.3532,
+      "per_class": {
+        "low": {
+          "precision": 0.2446,
+          "recall": 0.2761,
+          "f1-score": 0.2594,
+          "support": 163
+        },
+        "medium": {
+          "precision": 0.3638,
+          "recall": 0.5012,
+          "f1-score": 0.4216,
+          "support": 429
+        },
+        "high": {
+          "precision": 0.3403,
+          "recall": 0.2935,
+          "f1-score": 0.3152,
+          "support": 443
+        },
+        "critical": {
+          "precision": 0.4767,
+          "recall": 0.2921,
+          "f1-score": 0.3622,
+          "support": 315
+        }
+      },
+      "confusion_matrix": [
+        [
+          45,
+          84,
+          32,
+          2
+        ],
+        [
+          70,
+          215,
+          109,
+          35
+        ],
+        [
+          61,
+          188,
+          130,
+          64
+        ],
+        [
+          8,
+          104,
+          111,
+          92
+        ]
+      ],
+      "ordinal_mae": 0.8296,
+      "within_one_level": 0.8207,
+      "critical_recall": 0.2921,
+      "under_triage_rate": 0.4015
+    }
+  },
+  "anomaly": {
+    "selected": "HistGradientBoosting (supervised)",
+    "validation_f1": {
+      "IsolationForest (unsupervised)": 0.6968,
+      "HistGradientBoosting (supervised)": 0.9922
+    },
+    "threshold": 0.175,
+    "test": {
+      "precision": 0.9506,
+      "recall": 0.9059,
+      "f1": 0.9277,
+      "confusion_matrix": [
+        [
+          2791,
+          4
+        ],
+        [
+          8,
+          77
+        ]
+      ],
+      "detection_rate_by_fault_type": {
+        "spike": 1.0,
+        "drop": 0.6364,
+        "stuck": 1.0,
+        "drift": 0.8788
+      }
+    },
+    "baseline_raw_value_isolation_forest_test": {
+      "precision": 0.2342,
+      "recall": 0.7412,
+      "f1": 0.3559,
+      "confusion_matrix": [
+        [
+          2589,
+          206
+        ],
+        [
+          22,
+          63
+        ]
+      ]
+    }
+  },
+  "training_seconds": 20.5
+}
