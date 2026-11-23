@@ -34,7 +34,7 @@ export const reportFault = async (req, res) => {
     }
 
     // Validation: Fault type
-    const validTypes = ['water', 'electricity', 'gas', 'sewage', 'other'];
+    const validTypes = ['electricity', 'water', 'road', 'streetlight', 'sewage', 'gas', 'other'];
     if (!validTypes.includes(type.toLowerCase())) {
       return res.status(400).json({
         success: false,
@@ -90,16 +90,24 @@ export const reportFault = async (req, res) => {
     // Step 1: AI Fault Analysis
     const analysis = await analyzeFault({
       description,
-      type,
-      location: locationData
+      type: type.toLowerCase(),
+      location: locationData,
+      timestamp: new Date().toISOString()
     });
 
     // Step 2: Check historical patterns
     const historicalData = await checkHistoricalFaults(locationData, analysis.category);
 
+    // Citizen and AI may disagree on severity: keep the higher one (never under-triage)
+    const LEVELS = ['low', 'medium', 'high', 'critical'];
+    const citizenSeverity = severity?.toLowerCase();
+    const finalSeverity = [citizenSeverity, analysis.severity]
+      .filter(s => LEVELS.includes(s))
+      .sort((a, b) => LEVELS.indexOf(b) - LEVELS.indexOf(a))[0] || 'medium';
+
     // Step 3: Calculate Priority
     const priority = calculatePriority({
-      severity: severity || analysis.severity,
+      severity: finalSeverity,
       category: analysis.category,
       populationDensity: analysis.populationDensity,
       location: locationData
@@ -113,9 +121,18 @@ export const reportFault = async (req, res) => {
       type: analysis.category || type.toLowerCase(),
       description,
       location: locationData,
-      severity: severity || analysis.severity || 'medium',
-      confidenceScore: analysis.confidenceScore || 0.8,
+      severity: finalSeverity,
+      confidenceScore: analysis.confidenceScore ?? 0.5,
       aiCategory: analysis.category,
+      aiAnalysis: {
+        source: analysis.source,
+        severity: analysis.severity,
+        responseSla: analysis.responseSla,
+        priorityScore: analysis.aiPriorityScore,
+        requiresHumanReview: analysis.requiresHumanReview ?? analysis.source !== "ml_agents",
+        escalations: analysis.escalations || [],
+        flags: analysis.flags || []
+      },
       priorityScore: priority.priorityScore || 5,
       status: "analyzing",
       populationDensity: analysis.populationDensity,
@@ -208,7 +225,16 @@ export const detectFault = async (req, res) => {
     if (value === undefined || !type)
       return res.status(400).json({ message: "value and type are required" });
 
-    const result = await analyzeSensorData(value);
+    let result;
+    try {
+      result = await analyzeSensorData(value, {
+        utility: type,
+        recentValues: req.body.recentValues,
+        hourOfDay: new Date().getHours()
+      });
+    } catch (err) {
+      return res.status(503).json({ message: "AI service unavailable", error: err.message });
+    }
 
     if (!result.fault) {
       return res.json({ message: "No fault detected" });

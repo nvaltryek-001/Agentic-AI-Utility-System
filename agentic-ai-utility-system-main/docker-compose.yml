@@ -1,31 +1,54 @@
-﻿services:
-backend:
-build: ./backend
-container_name: valtryek_backend
-ports:
-- "5000:5000"
-volumes:
-- ./backend:/app
-depends_on:
-- mongo
+# Full stack: docker compose up --build
+#   frontend  http://localhost:5173
+#   backend   http://localhost:5000
+#   AI        http://localhost:8000/docs   (demo console: /demo)
+services:
+  mongo:
+    image: mongo:7
+    container_name: valtryek_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
 
-frontend:
-build: ./frontend
-container_name: valtryek_frontend
-ports:
-- "5173:5173"
-volumes:
-- ./frontend:/app
-environment:
-- VITE_API_URL=http://localhost:5000
+  ai-service:
+    build: ./ai-service
+    container_name: valtryek_ai
+    ports:
+      - "8000:8000"
+    environment:
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:5000
+      - ALLOW_TRAINING=false
 
-mongo:
-image: mongo
-container_name: valtryek_mongo
-ports:
-- "27017:27017"
-volumes:
-- mongo_data:/data/db
+  backend:
+    build: ./backend
+    container_name: valtryek_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - MONGO_URI=mongodb://mongo:27017/valtryek_001
+      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change_me_too}
+      - AI_SERVICE_URL=http://ai-service:8000
+      - AI_SERVICE_TIMEOUT=4000
+      - FRONTEND_URL=http://localhost:5173
+      - REDIS_ENABLED=false
+    depends_on:
+      - mongo
+      - ai-service
+
+  frontend:
+    build: ./frontend
+    container_name: valtryek_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+      - VITE_SOCKET_URL=http://localhost:5000
+    depends_on:
+      - backend
 
 volumes:
-mongo_data:
+  mongo_data:

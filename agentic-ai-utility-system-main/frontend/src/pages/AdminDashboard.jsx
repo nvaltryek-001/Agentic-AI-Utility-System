@@ -34,7 +34,8 @@ ChartJS.register(
   Filler
 );
 
-const API = import.meta.env.VITE_API_URL || "";
+// VITE_API_URL may or may not end in /api (see .env.example); this page appends /api itself
+const API = (import.meta.env.VITE_API_URL || "").replace(/\/api\/?$/, "");
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
 const SEVERITY_COLORS = {

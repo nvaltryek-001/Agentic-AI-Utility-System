@@ -23,6 +23,15 @@ const faultSchema = new mongoose.Schema({
   },
   confidenceScore: { type: Number, default: 0 },
   aiCategory: String,
+  aiAnalysis: {
+    source: { type: String, enum: ["ml_agents", "rules_fallback"] },
+    severity: String,
+    responseSla: String,
+    priorityScore: Number,
+    requiresHumanReview: Boolean,
+    escalations: [String],
+    flags: [String]
+  },
   
   // Priority and Assignment
   priorityScore: { type: Number, default: 0 },
